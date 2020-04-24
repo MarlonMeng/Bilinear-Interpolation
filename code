@@ -1,0 +1,30 @@
+from PIL import Image
+import numpy as np
+import math
+
+def BiLinear_interpolation(img, dstH, dstW):
+    srcH, srcW, channels=img.shape
+    img = np.pad(img, ((0,1),(0,1),(0,0)),'constant')
+    retimg = np.zeros((dstH,dstW,3),dtype=np.uint8)
+    for i in range(channels):
+        for dst_y in range(dstH):
+            for dst_x in range(dstW):
+                src_x = (dst_x + 0.5) * srcW / dstW - 0.5
+                src_y = (dst_y + 0.5) * srcH / dstH - 0.5
+                # 四个点
+                src_x0 = int(math.floor(src_x))
+                src_x1 = min(src_x0 + 1, srcW - 1)
+                src_y0 = int(math.floor(src_y))
+                src_y1 = min(src_y0 + 1, srcH - 1)
+                # 如果补了边界数据，就不需要判断
+                if src_x0 != src_x1 and src_y1 != src_y0:
+                    tp0 = ((src_x1 - src_x) * img[src_y0, src_x0, i] + (src_x - src_x0) * img[src_y0, src_x1, i]) / (src_x1 - src_x0)
+                    tp1 = (src_x1 - src_x) * img[src_y1, src_x0, i] + (src_x - src_x0) * img[src_y1, src_x1, i] / (src_x1 - src_x0)
+                    retimg[dst_y, dst_x, i] = int((src_y1 - src_y) * tp0 + (src_y - src_y0) * tp1) / (src_y1 - src_y0)
+
+    return retimg
+im_path='yamamao.jpg'
+image=np.array(Image.open(im_path))
+image1=BiLinear_interpolation(image,image.shape[0]*2,image.shape[1]*2)
+image1=Image.fromarray(image1.astype('uint8'))
+image1.save('out.png')
